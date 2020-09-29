@@ -203,22 +203,33 @@ public class SwiftMultiImagePickerPlugin: NSObject, FlutterPlugin {
             options.deliveryMode = PHImageRequestOptionsDeliveryMode.highQualityFormat
             options.isSynchronous = false
             options.isNetworkAccessAllowed = true
-            options.version = .current
+            options.version = .original
 
             let assets: PHFetchResult = PHAsset.fetchAssets(withLocalIdentifiers: [identifier], options: nil)
 
             if (assets.count > 0) {
                 let asset: PHAsset = assets[0];
 
-                let ID: PHImageRequestID = manager.requestImage(
-                    for: asset,
-                    targetSize: PHImageManagerMaximumSize,
-                    contentMode: PHImageContentMode.aspectFill,
-                    options: options,
-                    resultHandler: {
-                        (image: UIImage?, info) in
-                        self.messenger.send(onChannel: "multi_image_picker/image/" + identifier + ".original", message: image!.jpegData(compressionQuality: CGFloat(compressionQuality)))
-                })
+                let ID: PHImageRequestID
+                if quality == 100 {
+                    ID = manager.requestImageData(
+                        for: asset,
+                        options: options,
+                        resultHandler: {
+                            (imageData, _, _, _) in
+                            self.messenger.send(onChannel: "multi_image_picker/image/" + identifier + ".original", message: imageData)
+                    })
+                } else {
+                    ID = manager.requestImage(
+                        for: asset,
+                        targetSize: PHImageManagerMaximumSize,
+                        contentMode: PHImageContentMode.aspectFill,
+                        options: options,
+                        resultHandler: {
+                            (image: UIImage?, info) in
+                            self.messenger.send(onChannel: "multi_image_picker/image/" + identifier + ".original", message: image!.jpegData(compressionQuality: CGFloat(compressionQuality)))
+                    })
+                }
 
                 if(PHInvalidImageRequestID != ID) {
                     return result(true);
